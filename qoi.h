@@ -91,19 +91,18 @@ bool QoiEncode(uint32_t width, uint32_t height, uint8_t channels, uint8_t colors
                 run = 0;
             }
             
-            // Update history array first
+            // Check QOI_OP_INDEX first (before updating history)
             int index = QoiColorHash(r, g, b, a);
-            history[index][0] = r;
-            history[index][1] = g;
-            history[index][2] = b;
-            history[index][3] = a;
-            
-            // Check QOI_OP_INDEX
             if (history[index][0] == r && history[index][1] == g && 
                 history[index][2] == b && history[index][3] == a) {
                 // QOI_OP_INDEX: 2-bit tag (00) + 6-bit index
                 QoiWriteU8(index);
             } else {
+                // Update history array only if not using INDEX
+                history[index][0] = r;
+                history[index][1] = g;
+                history[index][2] = b;
+                history[index][3] = a;
                 
                 // Check QOI_OP_DIFF (small differences, alpha unchanged)
                 if (a == pre_a &&
@@ -260,17 +259,17 @@ bool QoiDecode(uint32_t &width, uint32_t &height, uint8_t &channels, uint8_t &co
             }
         }
         
-        QoiWriteU8(r);
-        QoiWriteU8(g);
-        QoiWriteU8(b);
-        if (channels == 4) QoiWriteU8(a);
-        
-        // Update history array after writing output
+        // Update history array before writing output
         int index = QoiColorHash(r, g, b, a);
         history[index][0] = r;
         history[index][1] = g;
         history[index][2] = b;
         history[index][3] = a;
+
+        QoiWriteU8(r);
+        QoiWriteU8(g);
+        QoiWriteU8(b);
+        if (channels == 4) QoiWriteU8(a);
         
         pre_r = r;
         pre_g = g;
